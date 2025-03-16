@@ -8,6 +8,8 @@ import { useTheme } from './src/utils/context/ThemeContext'
 import Splash from './src/screens/onboarding/Splash'
 import AppNavigator from './src/navigation/AppNavigator'
 import CustomSafeAreaView from './src/components/common/SafeAreaView'
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { StyleSheet } from 'react-native';
 
 const Stack = createNativeStackNavigator()
 
@@ -46,12 +48,24 @@ const AppContent = () => {
   )
 }
 
+
+
 const App = () => {
   return (
     <ThemeProvider>
+      <GestureHandlerRootView style={styles.container}>
       <AppContent />
+      </GestureHandlerRootView>
+
+      
     </ThemeProvider>
   )
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});
 
 export default App
