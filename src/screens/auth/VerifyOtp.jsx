@@ -17,6 +17,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../utils/context/ThemeContext';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { userApi } from '../../api/api';
+import { useUserAuthStore } from '../../store/auth-store';
 
 const { width, height } = Dimensions.get('window');
 const OTP_LENGTH = 6;
@@ -35,6 +36,9 @@ const VerifyOtp = () => {
   const inputRef = useRef(null);
   const timerRef = useRef(null);
   const isDarkMode = currentTheme.dark;
+  
+  // Get the register user function from Zustand store
+  const registerUser = useUserAuthStore(state => state.registerUser);
 
   useEffect(() => {
     // Focus the input when the screen loads
@@ -46,6 +50,10 @@ const VerifyOtp = () => {
 
     // Start the timer
     startTimer();
+
+    // Log the token for debugging
+    console.log("Email received in VerifyOtp:", email);
+    console.log("Token received in VerifyOtp:", response?.activationToken?.token);
 
     return () => {
       // Clear the timer when the component unmounts
@@ -83,6 +91,23 @@ const VerifyOtp = () => {
     }
   };
 
+  // Handle clicking on a specific OTP box
+  const handleOtpBoxClick = (index) => {
+    // Ensure the input is focused and keyboard appears
+    if (inputRef.current) {
+      // Force keyboard to show by focusing with a slight delay
+      setTimeout(() => {
+        inputRef.current.focus();
+        
+        // If we're clicking on a box that already has a value, we want to replace it
+        // So we'll set the selection to that specific position
+        if (index < otp.length) {
+          inputRef.current.setSelection(index, index + 1);
+        }
+      }, 50);
+    }
+  };
+
   const handleResendOtp = async () => {
     if (timer > 0 || isResending) return;
 
@@ -91,7 +116,7 @@ const VerifyOtp = () => {
     
     try {
       // Call the API to resend OTP
-      // Replace with your actual API call
+      // This would typically be a call to re-register or request a new OTP
       await new Promise(resolve => setTimeout(resolve, 1500)); // Simulating API call
       
       setSuccess('OTP resent successfully!');
@@ -122,26 +147,39 @@ const VerifyOtp = () => {
       const verifyData = {
         email,
         otp,
-        token: response?.activationToken
+        token: response?.activationToken?.token // Make sure we're using the correct token path
       };
       
       console.log('Verifying OTP with data:', verifyData);
       
-      // Uncomment this when ready to use the actual API
-      // const response = await userApi.verifyEmail(verifyData);
+      // Call the actual API
+      const verifyResponse = await userApi.verifyEmail(verifyData);
+      console.log('Verification response:', verifyResponse);
       
-      // For now, simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      setSuccess('Account verified successfully!');
       
-      setSuccess('OTP verified successfully!');
-      
-      // Navigate to the next screen after successful verification
-      setTimeout(() => {
-        navigation.navigate('Login');
-      }, 1000);
+      // Check if we have the expected data in the response
+      if (verifyResponse.success && verifyResponse.accessToken) {
+        console.log('Storing user data:', verifyResponse.data);
+        console.log('Storing access token:', verifyResponse.accessToken);
+        
+        // Register user in Zustand store with the correct data structure
+        registerUser(verifyResponse.data, verifyResponse.accessToken);
+        
+        // Navigate to the home screen after successful verification
+        setTimeout(() => {
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Home' }],
+          });
+        }, 1000);
+      } else {
+        console.error('Invalid or unexpected response structure:', verifyResponse);
+        throw new Error('Unexpected response format from server');
+      }
     } catch (error) {
       console.error('OTP verification error:', error);
-      setError('Invalid OTP. Please try again.');
+      setError(error.response?.data?.message || error.message || 'Invalid OTP. Please try again.');
     } finally {
       setIsVerifying(false);
     }
@@ -153,27 +191,32 @@ const VerifyOtp = () => {
 
     for (let i = 0; i < OTP_LENGTH; i++) {
       boxes.push(
-        <View
+        <TouchableOpacity
           key={i}
-          style={[
-            styles.otpBox,
-            {
-              backgroundColor: isDarkMode ? '#2A2A2A' : '#F5F5F5',
-              borderColor: otpArray[i] 
-                ? (isDarkMode ? '#FFFFFF' : '#2563EB')
-                : (isDarkMode ? '#555555' : '#E5E7EB')
-            }
-          ]}
+          onPress={() => handleOtpBoxClick(i)}
+          activeOpacity={0.7}
         >
-          <Text
+          <View
             style={[
-              styles.otpText,
-              { color: currentTheme.colors.text }
+              styles.otpBox,
+              {
+                backgroundColor: isDarkMode ? '#2A2A2A' : '#F5F5F5',
+                borderColor: otpArray[i] 
+                  ? (isDarkMode ? '#FFFFFF' : '#2563EB')
+                  : (isDarkMode ? '#555555' : '#E5E7EB')
+              }
             ]}
           >
-            {otpArray[i] || ''}
-          </Text>
-    </View>
+            <Text
+              style={[
+                styles.otpText,
+                { color: currentTheme.colors.text }
+              ]}
+            >
+              {otpArray[i] || ''}
+            </Text>
+          </View>
+        </TouchableOpacity>
       );
     }
 
@@ -224,12 +267,14 @@ const VerifyOtp = () => {
             
             <TextInput
               ref={inputRef}
-              style={styles.hiddenInput}
+              style={[styles.hiddenInput, { height: 50 }]}
               value={otp}
               onChangeText={handleOtpChange}
               keyboardType="number-pad"
               maxLength={OTP_LENGTH}
-              autoFocus
+              caretHidden={true}
+              selection={{start: otp.length, end: otp.length}}
+              showSoftInputOnFocus={true}
             />
           </View>
 
@@ -351,6 +396,7 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     marginBottom: height * 0.03,
+    position: 'relative',
   },
   otpBoxesContainer: {
     flexDirection: 'row',
@@ -373,8 +419,9 @@ const styles = StyleSheet.create({
   hiddenInput: {
     position: 'absolute',
     opacity: 0,
-    width: 1,
-    height: 1,
+    width: '100%',
+    height: 50,
+    top: 0,
   },
   errorText: {
     color: '#EF4444',

@@ -211,24 +211,24 @@ const Register = () => {
     
     // Start loading animation
     setIsRegistering(true);
-    setRegistrationStatus('Creating your account...');
+    setRegistrationStatus('Sending Verification Code...');
     
     try {
       // Call the API to register the user
       const response = await userApi.registerUser(registrationData);
-      console.log("Registration data sent to API:", registrationData);
       console.log("Registration response:", response);
-      console.log("Registration response:", response?.activationToken);
       
-      // Show success message
-      setRegistrationStatus('Account created successfully!');
+      // Update status to show sending verification code
+      setRegistrationStatus('Sending verification code...');
       
-      // Short delay to show success message
-      setTimeout(() => {
-        setIsRegistering(false);
-        // Navigate to OTP verification
-        navigation.navigate('VerifyOtp', { email ,response});
-      }, 1000);
+      // Navigate to OTP verification immediately when response comes back
+      setIsRegistering(false);
+      
+      // Pass the complete response to the VerifyOtp screen
+      navigation.navigate('VerifyOtp', { 
+        email, 
+        response: response // Pass the entire response object
+      });
       
     } catch (error) {
       console.error("Registration error:", error);
