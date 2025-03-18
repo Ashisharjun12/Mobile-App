@@ -16,7 +16,7 @@ const Theme = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: currentTheme.colors.background }]}>
-      <Navigate />
+      <Navigate title="Appearance" />
       
       <Text style={[styles.subtitle, { color: currentTheme.colors.text }]}>
         Customize your app appearance

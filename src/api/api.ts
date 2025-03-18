@@ -170,15 +170,15 @@ export const postApi = {
   },
 
   //get post by userId
-  getPostByUserId: async (id: string) => {
+  getPostByUserId: async (id: string, page: number = 1, limit: number = 9) => {
     const token = useUserAuthStore.getState().token;
-    const response = await api.get(`/post/get-post-by-author/${id}`,{
+    const response = await api.get(`/post/user-posts/${id}?page=${page}&limit=${limit}`,{
       headers: {
         Authorization: `Bearer ${token}`
       }
     });
     
-    console.log("post response....by userId",response.data);
+    console.log("post response....by userId", response.data);
     return response.data;
   },
 

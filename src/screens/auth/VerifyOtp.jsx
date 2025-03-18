@@ -170,7 +170,7 @@ const VerifyOtp = () => {
         setTimeout(() => {
           navigation.reset({
             index: 0,
-            routes: [{ name: 'Home' }],
+            routes: [{ name: 'MainApp' }],
           });
         }, 1000);
       } else {
@@ -312,7 +312,7 @@ const VerifyOtp = () => {
                 )}
               </TouchableOpacity>
             )}
-          </View>
+    </View>
         </Animated.View>
 
         <Animated.View

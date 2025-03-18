@@ -6,7 +6,9 @@ import {
   Dimensions, 
   TouchableOpacity, 
   KeyboardAvoidingView, 
-  Platform 
+  Platform,
+  ActivityIndicator,
+  Alert
 } from 'react-native';
 import { useTheme } from '../../utils/context/ThemeContext';
 import Animated, { 
@@ -16,15 +18,104 @@ import Animated, {
 import Input from '../../components/common/Input';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
+import { userApi } from '../../api/api';
+import { useUserAuthStore } from '../../store/auth-store';
 
 const { width, height } = Dimensions.get('window');
 
 const Login = () => {
   const navigation = useNavigation();
   const { currentTheme, isDarkTheme } = useTheme();
+  const loginUser = useUserAuthStore(state => state.loginUser);
+  
+  // Form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  
+  // UI state
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const validateForm = () => {
+    if (!email.trim()) {
+      setError('Please enter your email or username');
+      return false;
+    }
+    if (!password) {
+      setError('Please enter your password');
+      return false;
+    }
+    return true;
+  };
+
+  const handleLogin = async () => {
+    // Clear previous errors
+    setError('');
+    
+    // Validate form
+    if (!validateForm()) return;
+    
+    setIsLoading(true);
+    
+    try {
+      // Determine if input is email or username
+      const isEmail = email.includes('@');
+      const loginData = isEmail 
+        ? { email: email.trim(), password } 
+        : { username: email.trim(), password };
+      
+      console.log('Attempting login with:', { ...loginData, password: '********' });
+      
+      // Call login API
+      const response = await userApi.loginUser(loginData);
+      console.log('Login successful:', response);
+      
+      if (response.success) {
+        // Get user data from response.data
+        const userData = response.data;
+        
+        // Store access token in user object for later API calls
+        userData.accessToken = response.accessToken;
+        
+        // IMPORTANT: We're storing the refresh token as the main token in Zustand
+        // This way we don't need to change the auth store structure
+        loginUser(userData, response.refreshToken);
+        
+        console.log('User data stored in Zustand:', {
+          userData: userData,
+          token: response.refreshToken, // Using refresh token as the main token
+          accessToken: response.accessToken // Stored inside userData
+        });
+        
+        // Navigate to main app
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'MainApp' }],
+        });
+      } else {
+        // Handle unexpected response format
+        setError(response.message || 'Login failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      
+      // Handle different error scenarios
+      if (error.response) {
+        // The server responded with an error status code
+        const message = error.response.data?.message || 'Invalid credentials';
+        setError(message);
+      } else if (error.request) {
+        // The request was made but no response was received
+        setError('Cannot connect to server. Please check your internet connection.');
+      } else {
+        // Something happened in setting up the request
+        setError('An error occurred. Please try again.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <KeyboardAvoidingView 
@@ -53,17 +144,24 @@ const Login = () => {
         style={styles.formContainer}
       >
         <Input
-          placeholder="Email"
+          placeholder="Email or Username"
           value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
+          onChangeText={(text) => {
+            setEmail(text);
+            setError(''); // Clear error on input change
+          }}
+          keyboardType={email.includes('@') ? "email-address" : "default"}
+          autoCapitalize="none"
         />
 
         <View style={styles.passwordContainer}>
           <Input
             placeholder="Password"
             value={password}
-            onChangeText={setPassword}
+            onChangeText={(text) => {
+              setPassword(text);
+              setError(''); // Clear error on input change
+            }}
             secureTextEntry={!showPassword}
           />
           <TouchableOpacity 
@@ -78,6 +176,13 @@ const Login = () => {
           </TouchableOpacity>
         </View>
 
+        {/* Error Message */}
+        {error ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
+
         <TouchableOpacity style={styles.forgotPassword}>
           <Text style={[styles.forgotText, { color: '#2563EB' }]}>
             Forgot password?
@@ -85,10 +190,19 @@ const Login = () => {
         </TouchableOpacity>
 
         <TouchableOpacity 
-          style={[styles.button, { backgroundColor: '#2563EB' }]}
-          onPress={() => {}}
+          style={[
+            styles.button, 
+            { backgroundColor: '#2563EB' },
+            isLoading && { opacity: 0.7 }
+          ]}
+          onPress={handleLogin}
+          disabled={isLoading}
         >
-          <Text style={styles.buttonText}>Sign in</Text>
+          {isLoading ? (
+            <ActivityIndicator color="#FFFFFF" size="small" />
+          ) : (
+            <Text style={styles.buttonText}>Sign in</Text>
+          )}
         </TouchableOpacity>
 
         <View style={styles.signupContainer}>
@@ -98,12 +212,13 @@ const Login = () => {
           <TouchableOpacity 
             onPress={() => navigation.navigate('Register')}
             style={styles.createAccountButton}
+            disabled={isLoading}
           >
             <Text style={styles.createAccountText}>
               Create an account
             </Text>
           </TouchableOpacity>
-        </View>
+    </View>
       </Animated.View>
     </KeyboardAvoidingView>
   );
@@ -169,6 +284,16 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
     paddingHorizontal: width * 0.02,
+  },
+  errorContainer: {
+    width: width * 0.9,
+    marginTop: 8,
+    paddingHorizontal: 4,
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: width * 0.035,
+    fontFamily: 'Nunito-Medium',
   },
   forgotPassword: {
     alignSelf: 'flex-end',

@@ -1,9 +1,17 @@
 import React, { useEffect, useState } from 'react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import AuthNavigator from './AuthNavigator'
-import Home from '../screens/home/Home'
 import { useUserAuthStore } from '../store/auth-store'
 import { ActivityIndicator, View } from 'react-native'
+import MainApp from '../screens/home/MainApp'
+import Theme from '../components/setting/Theme'
+import Password from '../components/setting/Password'
+import PersonalDetails from '../components/setting/PersonalDetails'
+import Privacy from '../components/setting/Privacy'
+import Notification from '../components/setting/Notification'
+import DataStroage from '../components/setting/DataStroage'
+import DataDelete from '../components/setting/DataDelete'
+import Help from '../components/setting/Help'
 
 const Stack = createNativeStackNavigator()
 
@@ -15,7 +23,7 @@ const AppNavigator = () => {
 
     useEffect(() => {
         // Check authentication status when component mounts
-        console.log('Auth status:', { isAuthenticated, user: !!user, token: !!token })
+        console.log('Auth status:', { isAuthenticated, user: user, token: !!token })
         setIsLoading(false)
     }, [isAuthenticated, user, token])
 
@@ -31,7 +39,18 @@ const AppNavigator = () => {
         <Stack.Navigator>
             {isAuthenticated ? (
                 <>
-                    <Stack.Screen name="Home" component={Home} options={{ headerShown: false }} />
+                    <Stack.Screen name="MainApp" component={MainApp} options={{ headerShown: false }} />
+                    {/* settings start*/}
+                    <Stack.Screen name="Theme" component={Theme} options={{ headerShown: false, title: 'Appearance' }} />
+                    <Stack.Screen name="Password" component={Password} options={{ headerShown: false }} />
+                    <Stack.Screen name="PersonalDetails" component={PersonalDetails} options={{ headerShown: false }} />
+                    <Stack.Screen name="Privacy" component={Privacy} options={{ headerShown: false }} />
+                    <Stack.Screen name="Notification" component={Notification} options={{ headerShown: false }} />
+                    <Stack.Screen name="DataStroage" component={DataStroage} options={{ headerShown: false }} />
+                    <Stack.Screen name="DataDelete" component={DataDelete} options={{ headerShown: false }} />
+                    <Stack.Screen name="HelpCenter" component={Help} options={{ headerShown: false }} />
+                    {/* settings end */}
+                    
                 </>
             ) : (
                 <Stack.Screen name="AuthNavigator" component={AuthNavigator} options={{ headerShown: false }} />

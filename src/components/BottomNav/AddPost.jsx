@@ -1,12 +1,12 @@
 import { View, Text } from 'react-native'
 import React from 'react'
 
-const BottomNavigator = () => {
+const AddPost = () => {
   return (
     <View>
-      <Text>BottomNavigator</Text>
+      <Text>AddPost</Text>
     </View>
   )
 }
 
-export default BottomNavigator
+export default AddPost

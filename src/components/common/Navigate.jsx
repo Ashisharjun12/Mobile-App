@@ -2,16 +2,22 @@ import React from 'react';
 import { View, TouchableOpacity, StyleSheet, Dimensions, Text } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
-import { useTheme } from '../../utils/context/ThemeContext';
+import { useColorScheme } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
 const Navigate = ({ title }) => {
   const navigation = useNavigation();
-  const { currentTheme, isDarkTheme } = useTheme();
+  const isDark = useColorScheme() === 'dark';
+  
+  // Colors based on theme
+  const colors = {
+    background: isDark ? '#121212' : '#FFFFFF',
+    text: isDark ? '#FFFFFF' : '#000000',
+  };
 
   return (
-    <View style={[styles.container, { backgroundColor: currentTheme.colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.leftContainer}>
         <TouchableOpacity 
           style={styles.backButton} 
@@ -19,15 +25,15 @@ const Navigate = ({ title }) => {
         >
           <Ionicons 
             name="arrow-back-sharp" 
-            color={isDarkTheme ? '#FFFFFF' : '#000000'} 
+            color={colors.text} 
             size={width * 0.06} 
           />
         </TouchableOpacity>
       </View>
 
       <View style={styles.centerContainer}>
-        <Text style={[styles.title, { color: currentTheme.colors.text }]}>
-          Display
+        <Text style={[styles.title, { color: colors.text }]}>
+          {title}
         </Text>
       </View>
 
@@ -60,7 +66,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: width * 0.055,
-    fontFamily: 'Nunito-Bold',
+    fontWeight: 'bold',
     letterSpacing: 0.5,
   },
 });
