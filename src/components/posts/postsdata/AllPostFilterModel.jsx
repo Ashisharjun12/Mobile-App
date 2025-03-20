@@ -171,7 +171,7 @@ const AllPostFilterModel = ({ visible, onClose, onSelectFilter, currentFilter })
                     <Text style={[styles.optionDescription, { color: colors.subtext }]}>
                       View posts from your college only
                     </Text>
-                  </View>
+    </View>
                   
                   {currentFilter === 'college' && (
                     <Ionicons 

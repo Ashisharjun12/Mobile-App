@@ -199,7 +199,7 @@ const AllPost = ({ navigation, filterType = 'all' }) => {
   const handleProfilePress = (authorId) => {
     navigation.navigate('UserProfile', { 
       userId: authorId
-    });
+      });
   };
   
   // Function to open action modal
@@ -288,11 +288,11 @@ const AllPost = ({ navigation, filterType = 'all' }) => {
   
   // Render loading skeleton
   if (loading) {
-    return (
+  return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <PostSkeleton />
        
-      </View>
+    </View>
     );
   }
   
@@ -306,7 +306,7 @@ const AllPost = ({ navigation, filterType = 'all' }) => {
             post={item}
             userProfile={userProfiles[item.authorId]}
             onPostPress={() => handlePostPress(item)}
-            onProfilePress={() => handleProfilePress(item.authorId)}
+            onProfilePress={() => handleProfilePress(item.authorId, item.authorUsername)}
             onLike={() => handleLike(item.id)}
             onComment={() => handleComment(item.id)}
             onShare={() => handleShare(item.id)}

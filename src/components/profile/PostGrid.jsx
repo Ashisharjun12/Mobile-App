@@ -8,10 +8,12 @@ import {
   TouchableOpacity,
   Dimensions,
   ActivityIndicator,
+  RefreshControl,
   useColorScheme
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import PostGridSkeleton from '../skeleton/PostGridSkeleton';
 
 const { width } = Dimensions.get('window');
 const GRID_SIZE = width / 3;
@@ -23,13 +25,15 @@ const PostGrid = ({
   isLoadingMore = false,
   userId,
   isLoading = false,
-  disableScrolling = false
+  navigation,
+  onRefresh,
+  refreshing = false,
+  isVisitingProfile = false
 }) => {
-  const navigation = useNavigation();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   
-  // Define theme colors
+  // Theme colors
   const colors = {
     background: isDark ? '#121212' : '#FFFFFF',
     text: isDark ? '#E1E1E1' : '#000000',
@@ -39,11 +43,11 @@ const PostGrid = ({
     primary: '#0095F6',
   };
 
-  // Handle navigation to post detail
+  // Handle post tap - 
+  //  to post details screen
   const handlePostPress = (post) => {
     if (!post || !post.id) return;
     
-    // Ensure we have the author ID
     const authorId = post.authorId || userId;
     
     if (!authorId) {
@@ -53,33 +57,23 @@ const PostGrid = ({
     
     console.log(`Navigating to post ${post.id} by author ${authorId}`);
     
-    navigation.navigate('UserPosts', { 
+    // Navigate to the post detail view
+    navigation.navigate('UserPosts', {
       postId: post.id,
       authorId: authorId
     });
   };
 
-  // Render loading skeleton
+  // Show loading skeleton
   if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <View style={styles.gridContainer}>
-          {[...Array(9)].map((_, index) => (
-            <View 
-              key={`skeleton-${index}`} 
-              style={[styles.gridItem, { backgroundColor: colors.border }]}
-            />
-          ))}
-        </View>
-      </View>
-    );
+    return <PostGridSkeleton count={9} />;
   }
 
-  // Render empty state
+  // Render empty state (no posts)
   if (!posts || posts.length === 0) {
     return (
-      <View style={styles.emptyContainer}>
-        <Ionicons name="images-outline" size={50} color={colors.subtext} />
+      <View style={[styles.emptyContainer, { backgroundColor: colors.background }]}>
+        <Ionicons name="images-outline" size={60} color={colors.subtext} />
         <Text style={[styles.emptyText, { color: colors.text }]}>No Posts Yet</Text>
         <Text style={[styles.emptySubtext, { color: colors.subtext }]}>
           When posts are added, they'll appear here.
@@ -88,244 +82,55 @@ const PostGrid = ({
     );
   }
 
-  // Render grid view
+  // Grid view (3x3 grid of posts)
   if (viewMode === 'grid') {
-    if (disableScrolling) {
-      return (
-        <View style={styles.gridContainer}>
-          {posts.map(item => {
-            const hasMedia = item.media && item.media.length > 0;
-            const mediaUrl = hasMedia ? item.media[0].url : null;
-            const hasMultipleMedia = item.media && item.media.length > 1;
-            
-            return (
-              <TouchableOpacity 
-                key={item.id}
-                style={styles.gridItem}
-                onPress={() => handlePostPress(item)}
-                activeOpacity={0.8}
-              >
-                {mediaUrl ? (
-                  // Post with media
-                  <Image 
-                    source={{ uri: mediaUrl }} 
-                    style={styles.gridImage}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  // Text-only post
-                  <View style={[styles.textOnlyPost, { backgroundColor: colors.card }]}>
-                    <Text 
-                      style={[styles.textOnlyContent, { color: colors.text }]} 
-                      numberOfLines={4}
-                    >
-                      {item.content}
-                    </Text>
-                  </View>
-                )}
-                
-                {/* Indicators */}
-                {hasMultipleMedia && (
-                  <View style={styles.multipleIndicator}>
-                    <Ionicons name="layers" size={14} color="#FFFFFF" />
-                  </View>
-                )}
-                
-                {item.mediaType === 'video' && (
-                  <View style={styles.videoIndicator}>
-                    <Ionicons name="play" size={18} color="#FFFFFF" />
-                  </View>
-                )}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      );
-    }
-    
     return (
-      <View style={styles.container}>
-        <FlatList
-          data={posts}
-          keyExtractor={(item) => item.id}
-          numColumns={3}
-          renderItem={({ item }) => {
-            const hasMedia = item.media && item.media.length > 0;
-            const mediaUrl = hasMedia ? item.media[0].url : null;
-            const hasMultipleMedia = item.media && item.media.length > 1;
-            
-            return (
-              <TouchableOpacity 
-                style={styles.gridItem}
-                onPress={() => handlePostPress(item)}
-                activeOpacity={0.8}
-              >
-                {mediaUrl ? (
-                  // Post with media
-                  <Image 
-                    source={{ uri: mediaUrl }} 
-                    style={styles.gridImage}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  // Text-only post
-                  <View style={[styles.textOnlyPost, { backgroundColor: colors.card }]}>
-                    <Text 
-                      style={[styles.textOnlyContent, { color: colors.text }]} 
-                      numberOfLines={4}
-                    >
-                      {item.content}
-                    </Text>
-                  </View>
-                )}
-                
-                {/* Indicators */}
-                {hasMultipleMedia && (
-                  <View style={styles.multipleIndicator}>
-                    <Ionicons name="layers" size={14} color="#FFFFFF" />
-                  </View>
-                )}
-                
-                {item.mediaType === 'video' && (
-                  <View style={styles.videoIndicator}>
-                    <Ionicons name="play" size={18} color="#FFFFFF" />
-                  </View>
-                )}
-              </TouchableOpacity>
-            );
-          }}
-          onEndReached={onLoadMore}
-          onEndReachedThreshold={0.5}
-          ListFooterComponent={
-            isLoadingMore ? (
-              <View style={styles.footerLoader}>
-                <ActivityIndicator size="small" color={colors.primary} />
-              </View>
-            ) : null
-          }
-          initialNumToRender={9}
-          maxToRenderPerBatch={9}
-          windowSize={9}
-          removeClippedSubviews={true}
-        />
-      </View>
-    );
-  }
-
-  // Render list view
-  if (disableScrolling) {
-    return (
-      <View style={styles.listViewContainer}>
-        {posts.map(item => {
-          const hasMedia = item.media && item.media.length > 0;
-          const mediaUrl = hasMedia ? item.media[0].url : null;
-          
-          return (
-            <TouchableOpacity 
-              key={item.id}
-              style={[styles.listItem, { backgroundColor: colors.card }]}
-              onPress={() => handlePostPress(item)}
-              activeOpacity={0.8}
-            >
-              <View style={styles.listItemHeader}>
-                <Text style={[styles.listItemDate, { color: colors.subtext }]}>
-                  {formatDate(item.createdAt)}
-                </Text>
-              </View>
-              
-              {item.content && (
-                <Text 
-                  style={[styles.listItemContent, { color: colors.text }]} 
-                  numberOfLines={hasMedia ? 3 : 10}
-                >
-                  {item.content}
-                </Text>
-              )}
-              
-              {hasMedia && (
-                <Image 
-                  source={{ uri: mediaUrl }} 
-                  style={styles.listItemMedia}
-                  resizeMode="cover"
-                />
-              )}
-              
-              <View style={styles.listItemFooter}>
-                <View style={styles.listItemStat}>
-                  <Ionicons name="heart-outline" size={16} color={colors.subtext} />
-                  <Text style={[styles.listItemStatText, { color: colors.subtext }]}>
-                    {item.likesCount || 0}
-                  </Text>
-                </View>
-                
-                <View style={styles.listItemStat}>
-                  <Ionicons name="chatbubble-outline" size={16} color={colors.subtext} />
-                  <Text style={[styles.listItemStatText, { color: colors.subtext }]}>
-                    {item.commentsCount || 0}
-                  </Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    );
-  }
-  
-  // Original FlatList return for list view
-  return (
-    <View style={styles.container}>
       <FlatList
         data={posts}
         keyExtractor={(item) => item.id}
+        numColumns={3}
         renderItem={({ item }) => {
           const hasMedia = item.media && item.media.length > 0;
           const mediaUrl = hasMedia ? item.media[0].url : null;
+          const hasMultipleMedia = item.media && item.media.length > 1;
           
           return (
             <TouchableOpacity 
-              style={[styles.listItem, { backgroundColor: colors.card }]}
+              style={styles.gridItem}
               onPress={() => handlePostPress(item)}
               activeOpacity={0.8}
             >
-              <View style={styles.listItemHeader}>
-                <Text style={[styles.listItemDate, { color: colors.subtext }]}>
-                  {formatDate(item.createdAt)}
-                </Text>
-              </View>
-              
-              {item.content && (
-                <Text 
-                  style={[styles.listItemContent, { color: colors.text }]} 
-                  numberOfLines={hasMedia ? 3 : 10}
-                >
-                  {item.content}
-                </Text>
-              )}
-              
-              {hasMedia && (
+              {mediaUrl ? (
+                // Post with media
                 <Image 
                   source={{ uri: mediaUrl }} 
-                  style={styles.listItemMedia}
+                  style={styles.gridImage}
                   resizeMode="cover"
                 />
+              ) : (
+                // Text-only post
+                <View style={[styles.textOnlyPost, { backgroundColor: colors.card }]}>
+                  <Text 
+                    style={[styles.textOnlyContent, { color: colors.text }]} 
+                    numberOfLines={4}
+                  >
+                    {item.content}
+                  </Text>
+                </View>
               )}
               
-              <View style={styles.listItemFooter}>
-                <View style={styles.listItemStat}>
-                  <Ionicons name="heart-outline" size={16} color={colors.subtext} />
-                  <Text style={[styles.listItemStatText, { color: colors.subtext }]}>
-                    {item.likesCount || 0}
-                  </Text>
+              {/* Indicators for multiple media or video */}
+              {hasMultipleMedia && (
+                <View style={styles.multipleIndicator}>
+                  <MaterialIcons name="collections" size={16} color="#FFFFFF" />
                 </View>
-                
-                <View style={styles.listItemStat}>
-                  <Ionicons name="chatbubble-outline" size={16} color={colors.subtext} />
-                  <Text style={[styles.listItemStatText, { color: colors.subtext }]}>
-                    {item.commentsCount || 0}
-                  </Text>
+              )}
+              
+              {item.mediaType === 'video' && (
+                <View style={styles.videoIndicator}>
+                  <Ionicons name="play" size={18} color="#FFFFFF" />
                 </View>
-              </View>
+              )}
             </TouchableOpacity>
           );
         }}
@@ -338,13 +143,108 @@ const PostGrid = ({
             </View>
           ) : null
         }
-        initialNumToRender={5}
-        maxToRenderPerBatch={5}
-        windowSize={7}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={isDark ? '#FFFFFF' : '#000000'}
+            colors={[colors.primary]}
+            progressBackgroundColor={isDark ? '#2A2A2A' : '#F0F0F0'}
+          />
+        }
+        initialNumToRender={9}
+        maxToRenderPerBatch={9}
+        windowSize={9}
         removeClippedSubviews={true}
-        contentContainerStyle={styles.listContainer}
+        contentContainerStyle={styles.gridContainer}
       />
-    </View>
+    );
+  }
+  
+  // List view (vertical scrolling posts)
+  return (
+    <FlatList
+      data={posts}
+      keyExtractor={(item) => item.id}
+      renderItem={({ item }) => {
+        const hasMedia = item.media && item.media.length > 0;
+        const mediaUrl = hasMedia ? item.media[0].url : null;
+        
+        return (
+          <TouchableOpacity 
+            style={[styles.listItem, { backgroundColor: colors.background }]}
+            onPress={() => handlePostPress(item)}
+            activeOpacity={0.8}
+          >
+            {/* Post header with date */}
+            <View style={styles.listItemHeader}>
+              <Text style={[styles.listItemDate, { color: colors.subtext }]}>
+                {formatDate(item.createdAt)}
+              </Text>
+            </View>
+            
+            {/* Post content */}
+            {item.content && (
+              <Text 
+                style={[styles.listItemContent, { color: colors.text }]} 
+                numberOfLines={hasMedia ? 3 : 10}
+              >
+                {item.content}
+              </Text>
+            )}
+            
+            {/* Post media */}
+            {hasMedia && (
+              <Image 
+                source={{ uri: mediaUrl }} 
+                style={styles.listItemMedia}
+                resizeMode="cover"
+              />
+            )}
+            
+            {/* Post stats */}
+            <View style={styles.listItemFooter}>
+              <View style={styles.listItemStat}>
+                <Ionicons name="heart-outline" size={16} color={colors.subtext} />
+                <Text style={[styles.listItemStatText, { color: colors.subtext }]}>
+                  {item.likesCount || 0}
+                </Text>
+              </View>
+              
+              <View style={styles.listItemStat}>
+                <Ionicons name="chatbubble-outline" size={16} color={colors.subtext} />
+                <Text style={[styles.listItemStatText, { color: colors.subtext }]}>
+                  {item.commentsCount || 0}
+                </Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+        );
+      }}
+      onEndReached={onLoadMore}
+      onEndReachedThreshold={0.5}
+      ListFooterComponent={
+        isLoadingMore ? (
+          <View style={styles.footerLoader}>
+            <ActivityIndicator size="small" color={colors.primary} />
+          </View>
+        ) : null
+      }
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={isDark ? '#FFFFFF' : '#000000'}
+          colors={[colors.primary]}
+          progressBackgroundColor={isDark ? '#2A2A2A' : '#F0F0F0'}
+        />
+      }
+      initialNumToRender={5}
+      maxToRenderPerBatch={5}
+      windowSize={7}
+      removeClippedSubviews={true}
+      contentContainerStyle={styles.listContainer}
+    />
   );
 };
 
@@ -384,23 +284,14 @@ const formatDate = (dateString) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  loadingContainer: {
-    padding: 0.5,
-  },
   gridContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 0,
-    marginHorizontal: 0,
+    paddingVertical: 1,
   },
   gridItem: {
-    width: GRID_SIZE,
-    height: GRID_SIZE,
+    width: GRID_SIZE - 2,
+    height: GRID_SIZE - 2,
     position: 'relative',
-    margin: 0.5,
+    margin: 1,
   },
   gridImage: {
     width: '100%',
@@ -420,8 +311,8 @@ const styles = StyleSheet.create({
     top: 8,
     right: 8,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    borderRadius: 10,
-    padding: 4,
+    borderRadius: 4,
+    padding: 3,
   },
   videoIndicator: {
     position: 'absolute',
@@ -441,9 +332,11 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   listItem: {
-    borderRadius: 12,
     marginBottom: 16,
     overflow: 'hidden',
+    borderTopWidth: 0.5,
+    borderBottomWidth: 0.5,
+    borderColor: 'rgba(150, 150, 150, 0.2)',
   },
   listItemHeader: {
     flexDirection: 'row',
@@ -483,6 +376,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyContainer: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 50,
@@ -497,9 +391,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     marginTop: 8,
-  },
-  listViewContainer: {
-    padding: 8,
   },
 });
 

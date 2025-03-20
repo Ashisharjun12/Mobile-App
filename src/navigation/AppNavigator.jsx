@@ -14,6 +14,9 @@ import DataDelete from '../components/setting/DataDelete'
 import Help from '../components/setting/Help'
 import UserPost from '../components/posts/postsdata/UserPost'
 import AllPost from '../components/posts/postsdata/AllPost'
+import UserProfile from '../components/profile/UserProfile'
+import OtherProfile from '../components/profile/OtherProfile'
+import AboutAccount from '../screens/profile/other/AboutAccount'
 
 const Stack = createNativeStackNavigator()
 
@@ -56,6 +59,12 @@ const AppNavigator = () => {
                     <Stack.Screen name="UserPosts" component={UserPost} options={{ headerShown: false }} />
                     <Stack.Screen name="AllPosts" component={AllPost} options={{ headerShown: false }} />
                     {/* posts ends */}
+                    {/* profile start */}
+                    <Stack.Screen name="UserProfile" component={UserProfile} options={{ headerShown: false }} />
+                    <Stack.Screen name="OtherProfile" component={OtherProfile} options={{ headerShown: false }} />
+                    {/* others */}
+                    <Stack.Screen name="AboutAccount" component={AboutAccount} options={{ headerShown: false }} />
+                    {/* prodile end */}
                     
                 </>
             ) : (

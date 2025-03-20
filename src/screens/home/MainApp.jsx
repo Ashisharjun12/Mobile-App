@@ -77,7 +77,6 @@ const MainApp = () => {
           ),
         }}
       />
-      
       <Tab.Screen 
         name="SearchTab" 
         component={Search} 
