@@ -8,34 +8,72 @@ import {
   TouchableOpacity,
   Dimensions,
   ActivityIndicator,
+  useColorScheme
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
-import SkeletonLoader from '../common/SkeletonLoader';
 
 const { width } = Dimensions.get('window');
 const GRID_SIZE = width / 3;
 
 const PostGrid = ({ 
-  posts, 
-  viewMode,
+  posts = [], 
+  viewMode = 'grid',
   onLoadMore,
-  isLoadingMore,
-  hasMorePosts,
-  colors,
-  postUserId,
-  isLoading
+  isLoadingMore = false,
+  userId,
+  isLoading = false,
+  disableScrolling = false
 }) => {
   const navigation = useNavigation();
-
-  if (isLoading) {
-    return <SkeletonLoader type="grid" />;
-  }
-
-  // Navigate to post detail
-  const handlePostPress = (postId) => {
-    navigation.navigate('PostDetail', { postId });
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  
+  // Define theme colors
+  const colors = {
+    background: isDark ? '#121212' : '#FFFFFF',
+    text: isDark ? '#E1E1E1' : '#000000',
+    subtext: isDark ? '#9E9E9E' : '#666666',
+    border: isDark ? '#333333' : '#DDDDDD',
+    card: isDark ? '#1E1E1E' : '#F5F5F5',
+    primary: '#0095F6',
   };
+
+  // Handle navigation to post detail
+  const handlePostPress = (post) => {
+    if (!post || !post.id) return;
+    
+    // Ensure we have the author ID
+    const authorId = post.authorId || userId;
+    
+    if (!authorId) {
+      console.error("No author ID available for post:", post.id);
+      return;
+    }
+    
+    console.log(`Navigating to post ${post.id} by author ${authorId}`);
+    
+    navigation.navigate('UserPosts', { 
+      postId: post.id,
+      authorId: authorId
+    });
+  };
+
+  // Render loading skeleton
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <View style={styles.gridContainer}>
+          {[...Array(9)].map((_, index) => (
+            <View 
+              key={`skeleton-${index}`} 
+              style={[styles.gridItem, { backgroundColor: colors.border }]}
+            />
+          ))}
+        </View>
+      </View>
+    );
+  }
 
   // Render empty state
   if (!posts || posts.length === 0) {
@@ -50,148 +88,263 @@ const PostGrid = ({
     );
   }
 
-  // Grid item renderer
-  const renderGridItem = ({ item }) => {
-    // Determine if post has media
-    const hasMedia = item.media && item.media.length > 0;
-    const mediaUrl = hasMedia ? item.media[0].url : null;
-    const hasMultipleMedia = item.media && item.media.length > 1;
-    
-    return (
-      <TouchableOpacity 
-        style={styles.gridItem}
-        onPress={() => handlePostPress(item.id)}
-        activeOpacity={0.8}
-      >
-        {mediaUrl ? (
-          // Post with media
-          <Image 
-            source={{ uri: mediaUrl }} 
-            style={styles.gridImage}
-            resizeMode="cover"
-          />
-        ) : (
-          // Text-only post
-          <View style={[styles.textOnlyPost, { backgroundColor: colors.card }]}>
-            <Text 
-              style={[styles.textOnlyContent, { color: colors.text }]} 
-              numberOfLines={4}
-            >
-              {item.content}
-            </Text>
-          </View>
-        )}
-        
-        {/* Indicators */}
-        {hasMultipleMedia && (
-          <View style={styles.multipleIndicator}>
-            <Ionicons name="layers" size={14} color="#FFFFFF" />
-          </View>
-        )}
-        
-        {item.mediaType === 'video' && (
-          <View style={styles.videoIndicator}>
-            <Ionicons name="play" size={18} color="#FFFFFF" />
-          </View>
-        )}
-      </TouchableOpacity>
-    );
-  };
-
-  // List item renderer
-  const renderListItem = ({ item }) => {
-    // Determine if post has media
-    const hasMedia = item.media && item.media.length > 0;
-    const mediaUrl = hasMedia ? item.media[0].url : null;
-    
-    return (
-      <TouchableOpacity 
-        style={[styles.listItem, { backgroundColor: colors.card }]}
-        onPress={() => handlePostPress(item.id)}
-        activeOpacity={0.8}
-      >
-        <View style={styles.listItemHeader}>
-          <Text style={[styles.listItemDate, { color: colors.subtext }]}>
-            {formatDate(item.createdAt)}
-          </Text>
+  // Render grid view
+  if (viewMode === 'grid') {
+    if (disableScrolling) {
+      return (
+        <View style={styles.gridContainer}>
+          {posts.map(item => {
+            const hasMedia = item.media && item.media.length > 0;
+            const mediaUrl = hasMedia ? item.media[0].url : null;
+            const hasMultipleMedia = item.media && item.media.length > 1;
+            
+            return (
+              <TouchableOpacity 
+                key={item.id}
+                style={styles.gridItem}
+                onPress={() => handlePostPress(item)}
+                activeOpacity={0.8}
+              >
+                {mediaUrl ? (
+                  // Post with media
+                  <Image 
+                    source={{ uri: mediaUrl }} 
+                    style={styles.gridImage}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  // Text-only post
+                  <View style={[styles.textOnlyPost, { backgroundColor: colors.card }]}>
+                    <Text 
+                      style={[styles.textOnlyContent, { color: colors.text }]} 
+                      numberOfLines={4}
+                    >
+                      {item.content}
+                    </Text>
+                  </View>
+                )}
+                
+                {/* Indicators */}
+                {hasMultipleMedia && (
+                  <View style={styles.multipleIndicator}>
+                    <Ionicons name="layers" size={14} color="#FFFFFF" />
+                  </View>
+                )}
+                
+                {item.mediaType === 'video' && (
+                  <View style={styles.videoIndicator}>
+                    <Ionicons name="play" size={18} color="#FFFFFF" />
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
         </View>
-        
-        {item.content && (
-          <Text 
-            style={[styles.listItemContent, { color: colors.text }]} 
-            numberOfLines={hasMedia ? 3 : 10}
-          >
-            {item.content}
-          </Text>
-        )}
-        
-        {hasMedia && (
-          <Image 
-            source={{ uri: mediaUrl }} 
-            style={styles.listItemMedia}
-            resizeMode="cover"
-          />
-        )}
-        
-        <View style={styles.listItemFooter}>
-          <View style={styles.listItemStat}>
-            <Ionicons name="heart-outline" size={16} color={colors.subtext} />
-            <Text style={[styles.listItemStatText, { color: colors.subtext }]}>
-              {item.likesCount || 0}
-            </Text>
-          </View>
-          
-          <View style={styles.listItemStat}>
-            <Ionicons name="chatbubble-outline" size={16} color={colors.subtext} />
-            <Text style={[styles.listItemStatText, { color: colors.subtext }]}>
-              {item.commentsCount || 0}
-            </Text>
-          </View>
-        </View>
-      </TouchableOpacity>
-    );
-  };
-
-  // Footer loading indicator
-  const renderFooter = () => {
-    if (!isLoadingMore) return null;
+      );
+    }
     
     return (
-      <View style={styles.footerLoader}>
-        <ActivityIndicator size="small" color={colors.primary} />
+      <View style={styles.container}>
+        <FlatList
+          data={posts}
+          keyExtractor={(item) => item.id}
+          numColumns={3}
+          renderItem={({ item }) => {
+            const hasMedia = item.media && item.media.length > 0;
+            const mediaUrl = hasMedia ? item.media[0].url : null;
+            const hasMultipleMedia = item.media && item.media.length > 1;
+            
+            return (
+              <TouchableOpacity 
+                style={styles.gridItem}
+                onPress={() => handlePostPress(item)}
+                activeOpacity={0.8}
+              >
+                {mediaUrl ? (
+                  // Post with media
+                  <Image 
+                    source={{ uri: mediaUrl }} 
+                    style={styles.gridImage}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  // Text-only post
+                  <View style={[styles.textOnlyPost, { backgroundColor: colors.card }]}>
+                    <Text 
+                      style={[styles.textOnlyContent, { color: colors.text }]} 
+                      numberOfLines={4}
+                    >
+                      {item.content}
+                    </Text>
+                  </View>
+                )}
+                
+                {/* Indicators */}
+                {hasMultipleMedia && (
+                  <View style={styles.multipleIndicator}>
+                    <Ionicons name="layers" size={14} color="#FFFFFF" />
+                  </View>
+                )}
+                
+                {item.mediaType === 'video' && (
+                  <View style={styles.videoIndicator}>
+                    <Ionicons name="play" size={18} color="#FFFFFF" />
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          }}
+          onEndReached={onLoadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            isLoadingMore ? (
+              <View style={styles.footerLoader}>
+                <ActivityIndicator size="small" color={colors.primary} />
+              </View>
+            ) : null
+          }
+          initialNumToRender={9}
+          maxToRenderPerBatch={9}
+          windowSize={9}
+          removeClippedSubviews={true}
+        />
       </View>
     );
-  };
+  }
 
-  // The actual render
-  return viewMode === 'grid' ? (
-    <FlatList
-      data={posts}
-      renderItem={renderGridItem}
-      keyExtractor={item => item.id}
-      numColumns={3}
-      onEndReached={onLoadMore}
-      onEndReachedThreshold={0.5}
-      ListFooterComponent={renderFooter}
-      initialNumToRender={9}
-      maxToRenderPerBatch={9}
-      windowSize={9}
-      removeClippedSubviews={true}
-    />
-  ) : (
-    <FlatList
-      data={posts}
-      renderItem={renderListItem}
-      keyExtractor={item => item.id}
-      onEndReached={onLoadMore}
-      onEndReachedThreshold={0.5}
-      ListFooterComponent={renderFooter}
-      initialNumToRender={5}
-      maxToRenderPerBatch={5}
-      windowSize={7}
-      removeClippedSubviews={true}
-      contentContainerStyle={styles.listContainer}
-    />
+  // Render list view
+  if (disableScrolling) {
+    return (
+      <View style={styles.listViewContainer}>
+        {posts.map(item => {
+          const hasMedia = item.media && item.media.length > 0;
+          const mediaUrl = hasMedia ? item.media[0].url : null;
+          
+          return (
+            <TouchableOpacity 
+              key={item.id}
+              style={[styles.listItem, { backgroundColor: colors.card }]}
+              onPress={() => handlePostPress(item)}
+              activeOpacity={0.8}
+            >
+              <View style={styles.listItemHeader}>
+                <Text style={[styles.listItemDate, { color: colors.subtext }]}>
+                  {formatDate(item.createdAt)}
+                </Text>
+              </View>
+              
+              {item.content && (
+                <Text 
+                  style={[styles.listItemContent, { color: colors.text }]} 
+                  numberOfLines={hasMedia ? 3 : 10}
+                >
+                  {item.content}
+                </Text>
+              )}
+              
+              {hasMedia && (
+                <Image 
+                  source={{ uri: mediaUrl }} 
+                  style={styles.listItemMedia}
+                  resizeMode="cover"
+                />
+              )}
+              
+              <View style={styles.listItemFooter}>
+                <View style={styles.listItemStat}>
+                  <Ionicons name="heart-outline" size={16} color={colors.subtext} />
+                  <Text style={[styles.listItemStatText, { color: colors.subtext }]}>
+                    {item.likesCount || 0}
+                  </Text>
+                </View>
+                
+                <View style={styles.listItemStat}>
+                  <Ionicons name="chatbubble-outline" size={16} color={colors.subtext} />
+                  <Text style={[styles.listItemStatText, { color: colors.subtext }]}>
+                    {item.commentsCount || 0}
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
+  }
+  
+  // Original FlatList return for list view
+  return (
+    <View style={styles.container}>
+      <FlatList
+        data={posts}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => {
+          const hasMedia = item.media && item.media.length > 0;
+          const mediaUrl = hasMedia ? item.media[0].url : null;
+          
+          return (
+            <TouchableOpacity 
+              style={[styles.listItem, { backgroundColor: colors.card }]}
+              onPress={() => handlePostPress(item)}
+              activeOpacity={0.8}
+            >
+              <View style={styles.listItemHeader}>
+                <Text style={[styles.listItemDate, { color: colors.subtext }]}>
+                  {formatDate(item.createdAt)}
+                </Text>
+              </View>
+              
+              {item.content && (
+                <Text 
+                  style={[styles.listItemContent, { color: colors.text }]} 
+                  numberOfLines={hasMedia ? 3 : 10}
+                >
+                  {item.content}
+                </Text>
+              )}
+              
+              {hasMedia && (
+                <Image 
+                  source={{ uri: mediaUrl }} 
+                  style={styles.listItemMedia}
+                  resizeMode="cover"
+                />
+              )}
+              
+              <View style={styles.listItemFooter}>
+                <View style={styles.listItemStat}>
+                  <Ionicons name="heart-outline" size={16} color={colors.subtext} />
+                  <Text style={[styles.listItemStatText, { color: colors.subtext }]}>
+                    {item.likesCount || 0}
+                  </Text>
+                </View>
+                
+                <View style={styles.listItemStat}>
+                  <Ionicons name="chatbubble-outline" size={16} color={colors.subtext} />
+                  <Text style={[styles.listItemStatText, { color: colors.subtext }]}>
+                    {item.commentsCount || 0}
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          );
+        }}
+        onEndReached={onLoadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={
+          isLoadingMore ? (
+            <View style={styles.footerLoader}>
+              <ActivityIndicator size="small" color={colors.primary} />
+            </View>
+          ) : null
+        }
+        initialNumToRender={5}
+        maxToRenderPerBatch={5}
+        windowSize={7}
+        removeClippedSubviews={true}
+        contentContainerStyle={styles.listContainer}
+      />
+    </View>
   );
 };
 
@@ -231,7 +384,18 @@ const formatDate = (dateString) => {
 };
 
 const styles = StyleSheet.create({
-  // Grid styles
+  container: {
+    flex: 1,
+  },
+  loadingContainer: {
+    padding: 0.5,
+  },
+  gridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 0,
+    marginHorizontal: 0,
+  },
   gridItem: {
     width: GRID_SIZE,
     height: GRID_SIZE,
@@ -334,6 +498,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
   },
+  listViewContainer: {
+    padding: 8,
+  },
 });
 
-export default PostGrid; 
+export default PostGrid;

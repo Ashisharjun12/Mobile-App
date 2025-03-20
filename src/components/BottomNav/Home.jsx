@@ -1,16 +1,22 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../utils/context/ThemeContext';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import Theme from '../setting/Theme';
+import Feather from 'react-native-vector-icons/Feather';
 import ScreenWrapper from '../common/ScreenWrapper';
+import AllPost from '../posts/postsdata/AllPost';
+import AllPostFilterModel from '../posts/postsdata/AllPostFilterModel';
 
 const Home = () => {
   const navigation = useNavigation();
   const { currentTheme } = useTheme();
   const isDark = currentTheme.dark;
+  
+  // Filter state
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [filterType, setFilterType] = useState('all'); // 'all' or 'college'
 
   const handleMessagePress = () => {
     navigation.navigate('message');
@@ -18,6 +24,17 @@ const Home = () => {
 
   const handleNotificationPress = () => {
     navigation.navigate('notification');
+  };
+  
+  // Handle filter button press
+  const handleFilterPress = () => {
+    setFilterModalVisible(true);
+  };
+  
+  // Handle filter selection
+  const handleFilterChange = (type) => {
+    setFilterType(type);
+    setFilterModalVisible(false);
   };
 
   return (
@@ -34,16 +51,34 @@ const Home = () => {
         </View>
         
         <View style={styles.iconsContainer}>
-          {/* Custom Message Icon */}
+          {/* Filter Icon - Moved to be with other icons */}
+          <TouchableOpacity 
+            style={styles.iconButton} 
+            onPress={handleFilterPress}
+            activeOpacity={0.7}
+          >
+            <View style={styles.iconWrapper}>
+              <Feather 
+                name="filter" 
+                size={22}
+                color={filterType === 'college' ? '#0095F6' : (isDark ? '#FFFFFF' : '#000000')} 
+              />
+              {filterType === 'college' && (
+                <View style={styles.filterActiveDot} />
+              )}
+            </View>
+          </TouchableOpacity>
+        
+          {/* Message Icon */}
           <TouchableOpacity 
             style={styles.iconButton} 
             onPress={handleMessagePress}
             activeOpacity={0.7}
           >
             <View style={styles.iconWrapper}>
-              <MaterialCommunityIcons 
-                name="message-text-outline" 
-                size={24} 
+              <Feather
+                name="send" 
+                size={22} 
                 color={isDark ? '#FFFFFF' : '#000000'} 
               />
               {/* Unread indicator */}
@@ -51,7 +86,7 @@ const Home = () => {
             </View>
           </TouchableOpacity>
           
-          {/* Custom Notification Icon */}
+          {/* Notification Icon */}
           <TouchableOpacity 
             style={styles.iconButton} 
             onPress={handleNotificationPress}
@@ -71,8 +106,22 @@ const Home = () => {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Post feed takes the rest of the screen */}
+      <View style={styles.feedContainer}>
+        <AllPost 
+          navigation={navigation}
+          filterType={filterType}
+        />
+      </View>
       
-      
+      {/* Filter Modal */}
+      <AllPostFilterModel
+        visible={filterModalVisible}
+        onClose={() => setFilterModalVisible(false)}
+        onSelectFilter={handleFilterChange}
+        currentFilter={filterType}
+      />
     </ScreenWrapper>
   );
 };
@@ -102,7 +151,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   iconButton: {
-    marginLeft: 20,
+    marginLeft: 18,
     padding: 4,
   },
   iconWrapper: {
@@ -116,6 +165,17 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: '#2563EB',
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+  },
+  filterActiveDot: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#0095F6',
     borderWidth: 1.5,
     borderColor: 'transparent',
   },
@@ -136,9 +196,8 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
   },
-  content: {
+  feedContainer: {
     flex: 1,
-    paddingHorizontal: 16,
   },
 });
 

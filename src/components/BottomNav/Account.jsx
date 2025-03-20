@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   View, 
   StyleSheet,
@@ -12,7 +12,9 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import SettingModal from '../setting/SettingModal';
 import AddModel from '../add/AddModel';
 
+
 const Account = ({ navigation }) => {
+   
   const [isSettingsVisible, setIsSettingsVisible] = useState(false);
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const colorScheme = useColorScheme();

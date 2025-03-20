@@ -11,14 +11,25 @@ import {
   TouchableWithoutFeedback
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const { height } = Dimensions.get('window');
 
-const AddModel = ({ isVisible, onClose }) => {
+const ActionModel = ({ 
+  visible, 
+  onClose, 
+  isOwnPost = false,
+  onEdit,
+  onDelete,
+  onShare,
+  onSave,
+  onCopyLink,
+  onBlock,
+  onReport,
+  onNotInterested
+}) => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const navigation = useNavigation();
   
   // Theme colors
   const colors = {
@@ -28,15 +39,16 @@ const AddModel = ({ isVisible, onClose }) => {
     subtext: isDark ? '#9E9E9E' : '#666666',
     border: isDark ? '#333333' : '#DDDDDD',
     highlightBlue: '#0095F6',
+    destructive: '#FF3B30',
     overlay: 'rgba(0, 0, 0, 0.4)',
   };
   
   // Animation values
-  const slideAnim = new Animated.Value(isVisible ? 0 : height);
-  const backdropOpacity = new Animated.Value(isVisible ? 1 : 0);
+  const slideAnim = new Animated.Value(visible ? 0 : height);
+  const backdropOpacity = new Animated.Value(visible ? 1 : 0);
   
   useEffect(() => {
-    if (isVisible) {
+    if (visible) {
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: 0,
@@ -63,7 +75,7 @@ const AddModel = ({ isVisible, onClose }) => {
         }),
       ]).start();
     }
-  }, [isVisible]);
+  }, [visible]);
   
   // Function to handle option press
   const handleOptionPress = (action) => {
@@ -76,36 +88,25 @@ const AddModel = ({ isVisible, onClose }) => {
     }, 300);
   };
   
-  // Define add options
-  const addOptions = [
-    {
-      icon: 'add-outline',
-      label: 'Create Post',
-      onPress: () => navigation.navigate('CreatePost'),
-    },
-    {
-      icon: 'school-outline',
-      label: 'Go to College Confession',
-      onPress: () => navigation.navigate('CollegeConfession'),
-    },
-    {
-      icon: 'chatbubble-outline',
-      label: 'Chat with AI',
-      onPress: () => navigation.navigate('AIChat'),
-    },
-  ];
-  
-  // Render option
-  const renderOption = (icon, label, onPress) => (
+  // Render action option
+  const renderOption = (icon, label, onPress, color = colors.text, destructive = false) => (
     <TouchableOpacity 
       style={styles.option}
       onPress={() => handleOptionPress(onPress)}
       activeOpacity={0.7}
     >
       <View style={styles.optionIconContainer}>
-        <Ionicons name={icon} size={22} color={colors.text} />
+        {typeof icon === 'string' ? (
+          <Ionicons name={icon} size={22} color={color} />
+        ) : (
+          <MaterialCommunityIcons name={icon} size={22} color={color} />
+        )}
       </View>
-      <Text style={[styles.optionText, { color: colors.text }]}>
+      <Text style={[
+        styles.optionText, 
+        { color },
+        destructive && styles.destructiveText
+      ]}>
         {label}
       </Text>
     </TouchableOpacity>
@@ -114,7 +115,7 @@ const AddModel = ({ isVisible, onClose }) => {
   return (
     <Modal
       transparent
-      visible={isVisible}
+      visible={visible}
       animationType="none"
       onRequestClose={onClose}
     >
@@ -141,20 +142,32 @@ const AddModel = ({ isVisible, onClose }) => {
               
               {/* Title */}
               <Text style={[styles.title, { color: colors.text }]}>
-                Create
+                Post Options
               </Text>
               
-              {/* Options */}
+              {/* Owner-specific options */}
+              {isOwnPost && (
+                <View style={styles.sectionContainer}>
+                  {renderOption('create-outline', 'Edit', onEdit)}
+                  {renderOption('trash-outline', 'Delete', onDelete, colors.destructive, true)}
+                  <View style={[styles.separator, { backgroundColor: colors.border }]} />
+                </View>
+              )}
+              
+              {/* Common options */}
               <View style={styles.sectionContainer}>
-                {addOptions.map((option, index) => (
-                  <React.Fragment key={index}>
-                    {renderOption(option.icon, option.label, option.onPress)}
-                    {index < addOptions.length - 1 && (
-                      <View style={[styles.optionSeparator, { backgroundColor: colors.border }]} />
-                    )}
-                  </React.Fragment>
-                ))}
+                {renderOption('share-outline', 'Share', onShare)}
+                {renderOption('bookmark-outline', 'Save', onSave)}
+                {renderOption('copy-outline', 'Copy link', onCopyLink)}
+                {!isOwnPost && renderOption('eye-off-outline', 'Not interested', onNotInterested)}
               </View>
+              
+              {/* Always show report and block (even for own posts) */}
+              <View style={[styles.separator, { backgroundColor: colors.border }]} />
+              <View style={styles.sectionContainer}>
+                {renderOption('remove-circle-outline', 'Block', onBlock, colors.destructive, true)}
+                {renderOption('flag-outline', 'Report', onReport, colors.destructive, true)}
+    </View>
               
               {/* Extra padding at the bottom */}
               <View style={styles.bottomPadding} />
@@ -210,13 +223,17 @@ const styles = StyleSheet.create({
   optionText: {
     fontSize: 16,
   },
-  optionSeparator: {
-    height: 0.5,
+  destructiveText: {
+    fontWeight: '500',
+  },
+  separator: {
+    height: 1,
     width: '100%',
+    marginVertical: 8,
   },
   bottomPadding: {
     height: 30, // Safe area for devices with home indicators
   }
 });
 
-export default AddModel;
+export default ActionModel;

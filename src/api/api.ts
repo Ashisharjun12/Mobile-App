@@ -182,6 +182,42 @@ export const postApi = {
     return response.data;
   },
 
+  //get postby authorId
+  getPostByAuthorId: async (id: string, page: number = 1, limit: number = 9) => {
+    const token = useUserAuthStore.getState().token;
+    const response = await api.get(`/post/get-post-by-author/${id}?page=${page}&limit=${limit}`,{
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    
+    console.log("post response....by authorId", response.data);
+    return response.data;
+  },
+
+  //get allposts
+  getAllPosts :async (page:number=1 ,limit:number=12)=>{
+    
+    const response = await api.get(`/post/get-All?page=${page}&limit=${limit}`);
+    console.log("post response....all posts", response.data);
+    return response.data;
+  },
+
+  //get all post from same collge
+
+  getAllPostFromSameCollege:async(page:number=1 ,limit:number=12)=>{
+    const token = useUserAuthStore.getState().token;
+    const response = await api.get(`/post/get-all-posts-same-college/?page=${page}&limit=${limit}`,{
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    
+    console.log("post response....same college posts", response.data);
+    return response.data;
+
+  }
+
 
 
 }

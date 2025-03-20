@@ -12,6 +12,8 @@ import Notification from '../components/setting/Notification'
 import DataStroage from '../components/setting/DataStroage'
 import DataDelete from '../components/setting/DataDelete'
 import Help from '../components/setting/Help'
+import UserPost from '../components/posts/postsdata/UserPost'
+import AllPost from '../components/posts/postsdata/AllPost'
 
 const Stack = createNativeStackNavigator()
 
@@ -50,6 +52,10 @@ const AppNavigator = () => {
                     <Stack.Screen name="DataDelete" component={DataDelete} options={{ headerShown: false }} />
                     <Stack.Screen name="HelpCenter" component={Help} options={{ headerShown: false }} />
                     {/* settings end */}
+                    {/* posts start */}
+                    <Stack.Screen name="UserPosts" component={UserPost} options={{ headerShown: false }} />
+                    <Stack.Screen name="AllPosts" component={AllPost} options={{ headerShown: false }} />
+                    {/* posts ends */}
                     
                 </>
             ) : (

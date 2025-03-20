@@ -18,7 +18,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import AuthErrorScreen from '../common/AuthErrorScreen';
 import UserProfileSkeleton from '../skeleton/UserProfileSkeleton';
 import PostGridSkeleton from '../skeleton/PostGridSkeleton';
-
+import PostGrid from './PostGrid';
 
 const { width } = Dimensions.get('window');
 const GRID_SIZE = width / 3;
@@ -199,10 +199,7 @@ const UserProfile = ({ userId: propUserId, navigation }) => {
     }
   };
 
-  // Navigate to post detail
-  const handlePostPress = (postId) => {
-    navigation.navigate('PostDetail', { postId });
-  };
+  
 
   // Render header (Profile Info)
   const renderHeader = () => {
@@ -358,161 +355,7 @@ const UserProfile = ({ userId: propUserId, navigation }) => {
             </TouchableOpacity>
           )}
         </View>
-        
-        {/* View Selector (Grid/List) */}
-        <View style={[styles.viewSelector, { borderBottomColor: colors.border }]}>
-          <TouchableOpacity 
-            style={[
-              styles.viewOption, 
-              viewMode === 'grid' && { borderBottomColor: colors.text, borderBottomWidth: 2 }
-            ]}
-            onPress={() => setViewMode('grid')}
-          >
-            <Ionicons 
-              name="grid-outline" 
-              size={24} 
-              color={viewMode === 'grid' ? colors.text : colors.subtext} 
-            />
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[
-              styles.viewOption, 
-              viewMode === 'list' && { borderBottomColor: colors.text, borderBottomWidth: 2 }
-            ]}
-            onPress={() => setViewMode('list')}
-          >
-            <Ionicons 
-              name="list-outline" 
-              size={24} 
-              color={viewMode === 'list' ? colors.text : colors.subtext} 
-            />
-          </TouchableOpacity>
-        </View>
       </View>
-    );
-  };
-
-  // Render empty state for posts
-  const renderEmptyPosts = () => {
-    if (isLoading) return null;
-    
-    return (
-      <View style={styles.emptyContainer}>
-        <Ionicons name="images-outline" size={50} color={colors.subtext} />
-        <Text style={[styles.emptyText, { color: colors.text }]}>No Posts Yet</Text>
-        <Text style={[styles.emptySubtext, { color: colors.subtext }]}>
-          When posts are added, they'll appear here.
-        </Text>
-      </View>
-    );
-  };
-
-  // Render footer for loading more
-  const renderFooter = () => {
-    if (!isLoadingMore) return null;
-    
-    return (
-      <View style={styles.footerLoader}>
-        <ActivityIndicator size="small" color={colors.primary} />
-      </View>
-    );
-  };
-
-  // Render grid item
-  const renderGridItem = ({ item }) => {
-    const hasMedia = item.media && item.media.length > 0;
-    const mediaUrl = hasMedia ? item.media[0].url : null;
-    const hasMultipleMedia = item.media && item.media.length > 1;
-    
-    return (
-      <TouchableOpacity 
-        style={styles.gridItem}
-        onPress={() => handlePostPress(item.id)}
-        activeOpacity={0.8}
-      >
-        {mediaUrl ? (
-          <Image 
-            source={{ uri: mediaUrl }} 
-            style={styles.gridImage}
-            resizeMode="cover"
-          />
-        ) : (
-          <View style={[styles.textOnlyPost, { backgroundColor: colors.card }]}>
-            <Text 
-              style={[styles.textOnlyContent, { color: colors.text }]} 
-              numberOfLines={4}
-            >
-              {item.content}
-            </Text>
-          </View>
-        )}
-        
-        {hasMultipleMedia && (
-          <View style={styles.multipleIndicator}>
-            <Ionicons name="layers" size={14} color="#FFFFFF" />
-          </View>
-        )}
-        
-        {item.mediaType === 'video' && (
-          <View style={styles.videoIndicator}>
-            <Ionicons name="play" size={18} color="#FFFFFF" />
-          </View>
-        )}
-      </TouchableOpacity>
-    );
-  };
-
-  // Render list item
-  const renderListItem = ({ item }) => {
-    const hasMedia = item.media && item.media.length > 0;
-    const mediaUrl = hasMedia ? item.media[0].url : null;
-    
-    return (
-      <TouchableOpacity 
-        style={[styles.listItem, { backgroundColor: colors.card }]}
-        onPress={() => handlePostPress(item.id)}
-        activeOpacity={0.8}
-      >
-        <View style={styles.listItemHeader}>
-          <Text style={[styles.listItemDate, { color: colors.subtext }]}>
-            {formatDate(item.createdAt)}
-          </Text>
-        </View>
-        
-        {item.content && (
-          <Text 
-            style={[styles.listItemContent, { color: colors.text }]} 
-            numberOfLines={hasMedia ? 3 : 10}
-          >
-            {item.content}
-          </Text>
-        )}
-        
-        {hasMedia && (
-          <Image 
-            source={{ uri: mediaUrl }} 
-            style={styles.listItemMedia}
-            resizeMode="cover"
-          />
-        )}
-        
-        <View style={styles.listItemFooter}>
-          <View style={styles.listItemStat}>
-            <Ionicons name="heart-outline" size={16} color={colors.subtext} />
-            <Text style={[styles.listItemStatText, { color: colors.subtext }]}>
-              {item.likesCount || 0}
-            </Text>
-          </View>
-          
-          <View style={styles.listItemStat}>
-            <Ionicons name="chatbubble-outline" size={16} color={colors.subtext} />
-            <Text style={[styles.listItemStatText, { color: colors.subtext }]}>
-              {item.commentsCount || 0}
-            </Text>
-          </View>
-        </View>
-      </TouchableOpacity>
     );
   };
 
@@ -552,68 +395,97 @@ const UserProfile = ({ userId: propUserId, navigation }) => {
     );
   }
 
-  // Main render - use FlatList with header instead of ScrollView
+  // Main render - using a FlatList with header and direct item renders
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <FlatList
-        data={viewMode === 'grid' ? posts : posts}
-        renderItem={viewMode === 'grid' ? renderGridItem : renderListItem}
-        keyExtractor={item => item.id}
-        numColumns={viewMode === 'grid' ? 3 : 1}
-        key={viewMode === 'grid' ? 'grid' : 'list'} // Force remount when view mode changes
-        ListHeaderComponent={renderHeader}
-        ListEmptyComponent={renderEmptyPosts}
-        ListFooterComponent={renderFooter}
-        onEndReached={handleLoadMore}
+        data={[]}  // Empty data array
+        renderItem={null}  // No renderItem needed
+        ListHeaderComponent={
+          <>
+            {renderHeader()}
+            {/* View Selector (Grid/List) */}
+            <View style={[styles.viewSelector, { borderBottomColor: colors.border }]}>
+              <TouchableOpacity 
+                style={[
+                  styles.viewOption, 
+                  viewMode === 'grid' && { borderBottomColor: colors.text, borderBottomWidth: 2 }
+                ]}
+                onPress={() => setViewMode('grid')}
+              >
+                <Ionicons 
+                  name="grid-outline" 
+                  size={24} 
+                  color={viewMode === 'grid' ? colors.text : colors.subtext} 
+                />
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[
+                  styles.viewOption, 
+                  viewMode === 'list' && { borderBottomColor: colors.text, borderBottomWidth: 2 }
+                ]}
+                onPress={() => setViewMode('list')}
+              >
+                <Ionicons 
+                  name="list-outline" 
+                  size={24} 
+                  color={viewMode === 'list' ? colors.text : colors.subtext} 
+                />
+              </TouchableOpacity>
+            </View>
+            {isLoading ? (
+              <PostGridSkeleton count={9} />
+            ) : posts.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Ionicons name="images-outline" size={50} color={colors.subtext} />
+                <Text style={[styles.emptyText, { color: colors.text }]}>No Posts Yet</Text>
+                <Text style={[styles.emptySubtext, { color: colors.subtext }]}>
+                  When posts are added, they'll appear here.
+                </Text>
+              </View>
+            ) : null}
+          </>
+        }
+        ListFooterComponent={
+          !isLoading && posts.length > 0 ? (
+            <View style={{ flex: 1 }}>
+              {/* Pass only the data to PostGrid, not the scrolling functionality */}
+              <PostGrid
+                posts={posts}
+                viewMode={viewMode}
+                onLoadMore={null} // Don't let PostGrid handle loading more
+                isLoadingMore={isLoadingMore}
+                userId={userId}
+                isLoading={false}
+                // Disable PostGrid's own FlatList scrolling
+                disableScrolling={true}
+              />
+              
+              {/* Show the loading indicator here instead */}
+              {isLoadingMore && (
+                <View style={styles.footerLoader}>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                </View>
+              )}
+            </View>
+          ) : null
+        }
+        onEndReached={null} // Remove this since PostGrid handles it
         onEndReachedThreshold={0.5}
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
         }
-        contentContainerStyle={
-          viewMode === 'list' ? styles.listContainer : null
-        }
-        initialNumToRender={viewMode === 'grid' ? 9 : 5}
-        maxToRenderPerBatch={viewMode === 'grid' ? 9 : 5}
-        windowSize={viewMode === 'grid' ? 9 : 7}
-        removeClippedSubviews={true}
+        ListFooterComponentStyle={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1 }}
       />
     </View>
   );
-};
-
-// Helper to format date
-const formatDate = (dateString) => {
-  if (!dateString) return '';
-  
-  const date = new Date(dateString);
-  const now = new Date();
-  const diff = now.getTime() - date.getTime();
-  
-  // Less than a minute
-  if (diff < 60 * 1000) {
-    return 'just now';
-  }
-  
-  // Less than an hour
-  if (diff < 60 * 60 * 1000) {
-    const minutes = Math.floor(diff / (60 * 1000));
-    return `${minutes}m ago`;
-  }
-  
-  // Less than a day
-  if (diff < 24 * 60 * 60 * 1000) {
-    const hours = Math.floor(diff / (60 * 60 * 1000));
-    return `${hours}h ago`;
-  }
-  
-  // Less than a week
-  if (diff < 7 * 24 * 60 * 60 * 1000) {
-    const days = Math.floor(diff / (24 * 60 * 60 * 1000));
-    return `${days}d ago`;
-  }
-  
-  // Otherwise, show the date
-  return date.toLocaleDateString();
 };
 
 const styles = StyleSheet.create({
@@ -747,88 +619,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     paddingVertical: 10,
-  },
-  
-  // Grid styles
-  gridItem: {
-    width: GRID_SIZE,
-    height: GRID_SIZE,
-    position: 'relative',
-    margin: 0.5,
-  },
-  gridImage: {
-    width: '100%',
-    height: '100%',
-  },
-  textOnlyPost: {
-    width: '100%',
-    height: '100%',
-    padding: 8,
-    justifyContent: 'center',
-  },
-  textOnlyContent: {
-    fontSize: 12,
-  },
-  multipleIndicator: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    borderRadius: 10,
-    padding: 4,
-  },
-  videoIndicator: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: [{ translateX: -12 }, { translateY: -12 }],
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    borderRadius: 16,
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  
-  // List styles
-  listContainer: {
-    paddingHorizontal: 8,
-  },
-  listItem: {
-    borderRadius: 12,
-    marginBottom: 16,
-    overflow: 'hidden',
-  },
-  listItemHeader: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    padding: 12,
-  },
-  listItemDate: {
-    fontSize: 12,
-  },
-  listItemContent: {
-    paddingHorizontal: 12,
-    marginBottom: 12,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  listItemMedia: {
-    width: '100%',
-    height: 240,
-  },
-  listItemFooter: {
-    flexDirection: 'row',
-    padding: 12,
-  },
-  listItemStat: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  listItemStatText: {
-    marginLeft: 4,
-    fontSize: 12,
   },
   
   // Loading and empty states
